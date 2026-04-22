@@ -2,11 +2,13 @@ package com.cajero.model.domain;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Scanner;
 
 public class Banco {
 
     private Map<String, Usuario> usuarios;
     private Map<Integer, Cuenta> cuentas;
+    private Scanner rm;
 
     public Banco() {
         this.usuarios = new HashMap<>();
@@ -17,6 +19,8 @@ public class Banco {
     public void registrarUsuario(Usuario usuario) {
         usuarios.put(usuario.getNombre(), usuario);
     }
+
+
 
     //registra una nueva cuenta y la envia al HashMap cuentas
     public void registrarCuenta(Cuenta cuenta) {

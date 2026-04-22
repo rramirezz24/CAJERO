@@ -1,4 +1,4 @@
-package com.cajero.model.main;
+package com.cajero;
 
 import com.cajero.menuapp.MenuApp;
 

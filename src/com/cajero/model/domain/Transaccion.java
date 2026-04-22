@@ -1,63 +1,47 @@
 package com.cajero.model.domain;
 
+import java.awt.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Scanner;
 
-public class Transaccion {
-
-    private int id;
-    private String tipo;
-    private double monto;
-    private String fecha;
-    private Cuenta cuenta;
-
-
-    // Historial de movimientos de la cuenta
-    private static List<String> historial = new ArrayList<>();
-    private static int contadorId = 1;
-
-    private static final DateTimeFormatter FORMATO_FECHA =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
-    public Transaccion(Cuenta cuenta) {
+public abstract class Transaccion  {
+    protected int id;
+    protected double montoTransaccion;
+    protected String fecha;
+    protected Cuenta cuenta;
+    
+    public Transaccion(double montoTransaccion, Cuenta cuenta) {
+        this.id = 0;
+        this.montoTransaccion = montoTransaccion;
+        this.fecha = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         this.cuenta = cuenta;
-        this.fecha = LocalDateTime.now().format(FORMATO_FECHA);
-        this.id = contadorId++;
     }
 
-    //retira el monto de la cuenta
-    public void retirar() {
-
+    public int getId() {
+        return id;
     }
 
-    //consigna un monto a la cuenta asociada
-    public void consignar() {
-
-    }
-        //transfiere el monto a otra cuenta
-
-    public void transferir() {
-
+    public void setId(int id) {
+        this.id = id;
     }
 
-    //imprime todos los movimientos registrados
-    public void consultarMovimientos() {
+    public abstract boolean ejecutar();
 
+    protected boolean validarMonto(){
+     if (montoTransaccion<=0){
+         System.out.println("El monto debe de ser mayor a $0");
+         return false;
+     }
+     return true;
     }
 
-    // ─── Método Auxiliar
-
-    private void registrarMovimiento(String tipo, double monto) {
-
+    protected boolean validarMontoMayorSaldo(){
+        if (montoTransaccion > cuenta.getSaldo()){
+            System.out.println("Saldo insuficiente");
+            return false;
+        }
+        return true;
     }
-
-    // Getters
-    public int getId() { return id; }
-    public String getTipo() { return tipo; }
-    public double getMonto() { return monto; }
-    public String getFecha() { return fecha; }
-    public Cuenta getCuenta() { return cuenta; }
-    public List<String> getHistorial() { return historial; }
 }

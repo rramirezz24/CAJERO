@@ -1,14 +1,22 @@
 package com.cajero.menuapp;
 
+import com.cajero.UI.MenuLogin;
+import com.cajero.UI.MenuPrincipal;
+import com.cajero.UI.MenuRegistro;
+import com.cajero.UI.MenuSesion;
 import com.cajero.model.domain.*;
+import com.cajero.model.domain.HijasTransaccion.Consignacion;
+import com.cajero.model.domain.HijasTransaccion.Retiro;
+import com.cajero.model.domain.HijasTransaccion.Transferencia;
 
+import java.util.ArrayList;
 import java.util.Scanner;
 
 //Menuapp se encarga de toda la logica y la interacción con el usuario
 //Controla los flujos de cada movimiento llamando a metodos de otras clases
 public class MenuApp {
 
-    private final Scanner sc;
+    private final Scanner rm;
     private final Banco banco;
     private final Autenticacion autenticacion;
 
@@ -16,11 +24,21 @@ public class MenuApp {
     private Cuenta cuentaActual;
     private boolean sesionActiva;
 
+    private MenuLogin menuLogin;
+    private MenuPrincipal menuPrincipal ;
+    private MenuRegistro menuRegistro;
+    private MenuSesion menuSesion;
+
     public MenuApp() {
-        this.sc = new Scanner(System.in);
+        this.rm = new Scanner(System.in);
         this.banco = new Banco();
         this.autenticacion = new Autenticacion();
         this.sesionActiva = false;
+
+        this.menuPrincipal = new MenuPrincipal();
+        this.menuRegistro = new MenuRegistro(rm, banco);
+        this.menuLogin = new MenuLogin(rm, banco, autenticacion);
+        this.menuSesion = new MenuSesion(rm,banco);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -31,11 +49,11 @@ public class MenuApp {
     public void iniciar() {
         boolean ejecutando = true;
         while (ejecutando) {
-            mostrarMenuPrincipal();
+            ejecutarMenuPrincipal();
             int opcion = leerEntero();
 
             switch (opcion) {
-                case 1 -> flujoIniciarSesion();
+                case 1 -> flujoIniciarSesion() ;
                 case 2 -> flujoRegistrarse();
                 case 0 -> {
                     System.out.println("¡Hasta luego!");
@@ -44,40 +62,24 @@ public class MenuApp {
                 default -> System.out.println("Opción no válida. Intente de nuevo.");
             }
         }
-        sc.close();
+        rm.close();
     }
 
     // FLUJOS PRINCIPALES
 
     //Flujo de registro de Usuario
     private void flujoRegistrarse() {
-
+        menuRegistro.mostrarMenuRegistro();
     }
 
     //Flujo de inicio de Sesión
     private void flujoIniciarSesion() {
-    }
-
-    //Menu de inicio de sesion mientras la sesion este activa
-    private void menuSesion() {
-        boolean enSesion = true;
-        while (enSesion) {
-            mostrarMenuSesion();
-            int opcion = leerEntero();
-
-            switch (opcion) {
-                case 1 -> flujoConsignar();
-                case 2 -> flujoRetirar();
-                case 3 -> flujoTransferir();
-                case 4 -> flujoConsultarMovimientos();
-                case 0 -> {
-                    System.out.println("Sesión cerrada. Hasta luego, " + usuarioActual.getNombre() + ".");
-                    cerrarSesion();
-                    enSesion = false;
-                }
-                default -> System.out.println("Opción no válida.");
-            }
+        Usuario u = menuLogin.mostrarMenuLogin();
+        if (u != null){
+            Cuenta c = banco.buscarCuenta(u.getNumeroCuenta());
+            menuSesion.mostrarMenuSesion(u,c);
         }
+
     }
 
 
@@ -86,50 +88,47 @@ public class MenuApp {
 
     //Flujo para consignar la cuenta
     private void flujoConsignar() {
-
+        System.out.println("Ingrese el monto a consignar.");
+        double monto = leerDouble();
+        Transaccion t = new Consignacion(monto,cuentaActual);
     }
 
     //Flujo para retirar dinero de la cuenta
     private void flujoRetirar() {
-
+        System.out.println("Ingrese el monto a retirar.");
+        double monto = leerDouble();
+        Transaccion t = new Retiro(monto,cuentaActual);
     }
 
     //Flujo para transferir dinero a otra cuenta
     private void flujoTransferir() {
-
+        System.out.println("Ingrese el monto a Transferir.");
+        double monto = leerDouble();
+        System.out.println("Ingrese la cuenta de destino.");
+        int cuentaDestino = leerEntero();
+        Transaccion t = new Transferencia(monto,cuentaActual,banco.buscarCuenta(cuentaDestino));
     }
 
     //Flujo para consultar movimientos
     private void flujoConsultarMovimientos() {
-
+        ArrayList<String> historial = cuentaActual.getHistorial();
+        if(historial.isEmpty()){
+            System.out.println("No hay movimientos registrados.");
+            return;
+        }
+        System.out.println("--HISTORIAL DE MOVIMIENTOS--\n");
+        for(String movimiento : historial){
+            System.out.println(movimiento);
+        }
+        return;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
     // MENÚS (VISTAS)
     // ─────────────────────────────────────────────────────────────────────────
 
-    private void mostrarMenuPrincipal() {
-        System.out.println("\n╔══════════════════════╗");
-        System.out.println("║      MI PLATA        ║");
-        System.out.println("╠══════════════════════╣");
-        System.out.println("║  1. Iniciar sesión   ║");
-        System.out.println("║  2. Registrarse      ║");
-        System.out.println("║  0. Salir            ║");
-        System.out.println("╚══════════════════════╝");
-        System.out.print("Seleccione: ");
-    }
-
-    private void mostrarMenuSesion() {
-        System.out.println("\n╔══════════════════════════════╗");
-        System.out.println("║  Saldo: $" + String.format("%-20.2f", cuentaActual.getSaldo()) + "║");
-        System.out.println("╠══════════════════════════════╣");
-        System.out.println("║  1. Consignar                ║");
-        System.out.println("║  2. Retirar                  ║");
-        System.out.println("║  3. Transferir               ║");
-        System.out.println("║  4. Ver movimientos          ║");
-        System.out.println("║  0. Cerrar sesión            ║");
-        System.out.println("╚══════════════════════════════╝");
-        System.out.print("Seleccione: ");
+    private void ejecutarMenuPrincipal() {
+        menuPrincipal.mostrarMenuPrincipal();
     }
 
 
@@ -141,11 +140,11 @@ public class MenuApp {
         cuentaActual = null;
     }
 
-    //lee un entero de manera segura en la consola
-    private int leerEntero() {
+    //leer entero de manera segura
+    public int leerEntero() {
         while (true) {
             try {
-                int valor = Integer.parseInt(sc.nextLine().trim());
+                int valor = Integer.parseInt(rm.nextLine().trim());
                 return valor;
             } catch (NumberFormatException e) {
                 System.out.print("Por favor ingrese un número válido: ");
@@ -153,11 +152,11 @@ public class MenuApp {
         }
     }
 
-    //lee un double de manera segura en la consola
-    private double leerDouble() {
+    //leer double de manera segura
+    public double leerDouble() {
         while (true) {
             try {
-                double valor = Double.parseDouble(sc.nextLine().trim());
+                double valor = Double.parseDouble(rm.nextLine().trim());
                 return valor;
             } catch (NumberFormatException e) {
                 System.out.print("Por favor ingrese un monto válido: ");
